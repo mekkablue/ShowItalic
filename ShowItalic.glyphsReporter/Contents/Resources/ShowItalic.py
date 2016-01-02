@@ -95,7 +95,12 @@ class ShowItalic(ReporterPluginItalic):
 							
 						# draw the layer on the canvas:
 						drawingColor.set()
-						displayLayer.bezierPath().fill()
+						try:
+							# app version 2.2
+							displayLayer.bezierPath().fill()
+						except:
+							# app version 2.3+
+							displayLayer.bezierPath.fill()
 						
 						# display info if a different glyph is shown
 						if not exactCounterpartShown:
