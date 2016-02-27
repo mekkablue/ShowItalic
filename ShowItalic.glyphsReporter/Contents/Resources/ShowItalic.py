@@ -69,13 +69,12 @@ class ShowItalic(ReporterPluginItalic):
 					drawingColor = NSColor.greenColor()
 				
 				if italicGlyph:
-					
 					# determine the same master in other font:
 					italicMaster = None
 					uprightMasterID = layer.associatedMasterId
 					if uprightMasterID:
 						uprightMasterName = uprightFont.masters[uprightMasterID].name.replace("Italic","").strip()
-						italicMasters = [m for m in italicFont.masters if uprightMasterName in m.name]
+						italicMasters = [m for m in italicFont.masters if m.name.startswith(uprightMasterName)]
 						if italicMasters:
 							italicMaster = italicMasters[0]
 					
@@ -83,7 +82,7 @@ class ShowItalic(ReporterPluginItalic):
 					if not italicMaster:
 						italicMaster = italicFont.masters[0]
 					
-					# find the glyph layer that correspnds to the master:
+					# find the glyph layer that corresponds to the master:
 					italicLayer = italicGlyph.layers[italicMaster.id]
 					if italicLayer:
 						displayLayer = italicLayer.copyDecomposedLayer()
