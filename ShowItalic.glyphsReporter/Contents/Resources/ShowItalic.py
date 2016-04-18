@@ -2,6 +2,7 @@
 
 from pluginItalic import *
 from AppKit import *
+import math
 
 class ShowItalic(ReporterPluginItalic):
 
@@ -40,6 +41,37 @@ class ShowItalic(ReporterPluginItalic):
 			thisLayer.transform_checkForSelection_( xShift, False )
 		except Exception as e:
 			self.logToConsole( "shiftLayer: %s" % str(e) )
+	
+	def transform(self, shiftX=0.0, shiftY=0.0, rotate=0.0, skew=0.0, scale=1.0):
+		"""
+		Returns an NSAffineTransform object for transforming layers.
+		Apply an NSAffineTransform t object like this:
+			Layer.transform_checkForSelection_doComponents_(t,False,True)
+		Access its transformation matrix like this:
+			tMatrix = t.transformStruct() # returns the 6-float tuple
+		Apply the matrix tuple like this:
+			Layer.applyTransform(tMatrix)
+			Component.applyTransform(tMatrix)
+			Path.applyTransform(tMatrix)
+		Chain multiple NSAffineTransform objects t1, t2 like this:
+			t1.appendTransform_(t2)
+		"""
+		myTransform = NSAffineTransform.transform()
+		if rotate:
+			myTransform.rotateByDegrees_(rotate)
+		if scale != 1.0:
+			myTransform.scaleBy_(scale)
+		if not (shiftX == 0.0 and shiftY == 0.0):
+			myTransform.translateXBy_yBy_(shiftX,shiftY)
+		if skew:
+			skewStruct = NSAffineTransformStruct()
+			skewStruct.m11 = 1.0
+			skewStruct.m22 = 1.0
+			skewStruct.m21 = math.tan(math.radians(skew))
+			skewTransform = NSAffineTransform.transform()
+			skewTransform.setTransformStruct_(skewStruct)
+			myTransform.appendTransform_(skewTransform)
+		return myTransform
 	
 	def drawBackground(self, layer):
 		# set the default color:
@@ -84,22 +116,28 @@ class ShowItalic(ReporterPluginItalic):
 					
 					# find the glyph layer that corresponds to the master:
 					italicLayer = italicGlyph.layers[italicMaster.id]
-					if italicLayer:
-						displayLayer = italicLayer.copyDecomposedLayer()
-						
+					if not italicLayer is None:
+						displayLayer = NSBezierPath.bezierPath()
+						try:
+							# app version 2.2
+							displayLayer.appendBezierPath_(italicLayer.bezierPath())
+							for component in italicLayer.components:
+								displayLayer.appendBezierPath_( component.bezierPath() )
+						except:
+							# app version 2.3+
+							displayLayer.appendBezierPath_(italicLayer.bezierPath)
+							for component in italicLayer.components:
+								displayLayer.appendBezierPath_( component.bezierPath )
+							
 						# center layer:
-						widthDifference = layer.width - displayLayer.width
+						widthDifference = layer.width - italicLayer.width
 						if widthDifference:
-							self.shiftLayer( displayLayer, widthDifference/2.0 )
+							horizontalShift = self.transform( shiftX=widthDifference/2.0 )
+							displayLayer.transformUsingAffineTransform_( horizontalShift )
 							
 						# draw the layer on the canvas:
 						drawingColor.set()
-						try:
-							# app version 2.2
-							displayLayer.bezierPath().fill()
-						except:
-							# app version 2.3+
-							displayLayer.bezierPath.fill()
+						displayLayer.fill()
 						
 						# display info if a different glyph is shown
 						if not exactCounterpartShown:
