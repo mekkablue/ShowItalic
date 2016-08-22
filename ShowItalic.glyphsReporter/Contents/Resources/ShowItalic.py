@@ -75,7 +75,7 @@ class ShowItalic(ReporterPluginItalic):
 	
 	def drawBackground(self, layer):
 		# set the default color:
-		drawingColor = NSColor.magentaColor()
+		drawingColor = NSColor.colorWithRed_green_blue_alpha_(1.0, 0.1, 0.3, 0.3)
 		
 		exactCounterpartShown = True
 		
