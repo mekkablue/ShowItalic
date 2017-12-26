@@ -80,7 +80,11 @@ class ShowItalic(ReporterPluginItalic):
 		exactCounterpartShown = True
 		
 		# current font:
-		uprightFont = layer.parent.parent
+		uprightFont = None
+		if layer:
+			glyph = layer.parent
+			if glyph:
+				uprightFont = glyph.parent
 		
 		# find the italic/upright counterpart for the font:
 		italicFont = self.italicFontForFont(uprightFont)
