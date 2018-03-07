@@ -1,22 +1,23 @@
 # encoding: utf-8
 
-from pluginItalic import *
-from AppKit import *
 import math
+from GlyphsApp import *
+from GlyphsApp.plugins import *
+import traceback
 
-class ShowItalic(ReporterPluginItalic):
+class ShowItalic(ReporterPlugin):
 
 	def settings(self):
 		self.menuName = 'Italic'
 		
 	def masterHasItalicAngle( self, thisMaster ):
 		try:
-			if thisMaster.italicAngle == 0.0:
+			if abs(thisMaster.italicAngle) < 0.01:
 				return False
 			else:
 				return True
-		except Exception as e:
-			self.logToConsole( "masterHasItalicAngle: %s" % str(e) )
+		except:
+			print traceback.format_exc()
 	
 	def italicFontForFont( self, thisFont ):
 		try:
@@ -32,15 +33,15 @@ class ShowItalic(ReporterPluginItalic):
 						return listOfItalicFamilyMembers[0]
 			return None
 		except Exception as e:
-			self.logToConsole( "italicFontForFont: %s" % str(e) )
+			print traceback.format_exc()
 	
 	def shiftLayer( self, thisLayer, xOffset ):
 		try:
 			xShift = NSAffineTransform.transform()
 			xShift.translateXBy_yBy_( xOffset, 0.0 )
 			thisLayer.transform_checkForSelection_( xShift, False )
-		except Exception as e:
-			self.logToConsole( "shiftLayer: %s" % str(e) )
+		except:
+			print traceback.format_exc()
 	
 	def transform(self, shiftX=0.0, shiftY=0.0, rotate=0.0, skew=0.0, scale=1.0):
 		"""
@@ -73,7 +74,7 @@ class ShowItalic(ReporterPluginItalic):
 			myTransform.appendTransform_(skewTransform)
 		return myTransform
 	
-	def drawBackground(self, layer):
+	def background(self, layer):
 		# set the default color:
 		drawingColor = NSColor.colorWithRed_green_blue_alpha_(1.0, 0.1, 0.3, 0.3)
 		
