@@ -8,7 +8,11 @@ import traceback
 class ShowItalic(ReporterPlugin):
 
 	def settings(self):
-		self.menuName = 'Italic'
+		self.menuName = Glyphs.localize({
+			'en': u'Italic',
+			'de': u'Kursive',
+			'es': u'itálicas',
+		})
 		
 	def masterHasItalicAngle( self, thisMaster ):
 		try:
