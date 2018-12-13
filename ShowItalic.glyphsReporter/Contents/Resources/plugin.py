@@ -80,6 +80,13 @@ class ShowItalic(ReporterPlugin):
 		return myTransform
 	
 	def background(self, layer):
+		self.drawItalic(layer)
+	
+	def inactiveLayers(self, layer):
+		if Glyphs.defaults[com.mekkablue.ShowItalic.drawItalicsForInactiveGlyphs]:
+			self.drawItalic(layer, shouldFill=False, shouldFallback=False)
+	
+	def drawItalic(self, layer, shouldFill=True, shouldFallback=True):
 		# set the default color:
 		drawingColor = NSColor.colorWithRed_green_blue_alpha_(1.0, 0.1, 0.3, 0.3)
 		
@@ -147,10 +154,14 @@ class ShowItalic(ReporterPlugin):
 							
 						# draw the layer on the canvas:
 						drawingColor.set()
-						displayLayer.fill()
+						if shouldFill:
+							displayLayer.fill()
+						else:
+							displayLayer.setLineWidth_( 5.0 * self.getScale() ** -0.9 )
+							displayLayer.stroke()
 						
 						# display info if a different glyph is shown
-						if not exactCounterpartShown:
+						if not exactCounterpartShown and shouldFallback:
 							text = " \n \n \n \n%s not found.\nDisplaying %s instead." % ( glyphName, glyphNameWithoutSuffix )
 							textPosition = NSPoint( displayLayer.bounds.origin.x+displayLayer.bounds.size.width/2.0, displayLayer.bounds.origin.y )
 							self.drawTextAtPoint( text, textPosition, fontSize=10.0, fontColor=drawingColor, align='center')
