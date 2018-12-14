@@ -38,6 +38,7 @@ class ShowItalic(ReporterPlugin):
 						return listOfItalicFamilyMembers[0]
 			return None
 		except Exception as e:
+			print "Problem with", thisFont
 			print traceback.format_exc()
 	
 	def shiftLayer( self, thisLayer, xOffset ):
@@ -157,7 +158,7 @@ class ShowItalic(ReporterPlugin):
 						if shouldFill:
 							displayLayer.fill()
 						else:
-							displayLayer.setLineWidth_( 5.0 * self.getScale() ** -0.9 )
+							displayLayer.setLineWidth_( 1.0 * self.getScale() ** -0.9 )
 							displayLayer.stroke()
 						
 						# display info if a different glyph is shown
