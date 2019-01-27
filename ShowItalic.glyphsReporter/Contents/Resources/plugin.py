@@ -83,7 +83,7 @@ class ShowItalic(ReporterPlugin):
 	def background(self, layer):
 		self.drawItalic(layer)
 	
-	def inactiveLayers(self, layer):
+	def inactiveLayer(self, layer):
 		if Glyphs.defaults["com.mekkablue.ShowItalic.drawItalicsForInactiveGlyphs"]:
 			self.drawItalic(layer, shouldFill=False, shouldFallback=False)
 	
