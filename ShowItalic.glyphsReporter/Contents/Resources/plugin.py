@@ -126,7 +126,7 @@ class ShowItalic(ReporterPlugin):
 					if uprightMasterID:
 						uprightMasterName = uprightFont.masters[uprightMasterID].name.replace("Italic","").replace("  "," ").strip()
 						# try to find exact expected name:
-						italicMasters = [m for m in italicFont.masters if m.name.replace("Italic","").replace("  "," ")==uprightMasterName]
+						italicMasters = [m for m in italicFont.masters if m.name.replace("Italic","").replace("  "," ").strip()==uprightMasterName]
 						# if that fails, pick a best guess
 						if not italicMasters:
 							italicMasters = [m for m in italicFont.masters if m.name.replace("Italic","").replace("  "," ").startswith(uprightMasterName)]
