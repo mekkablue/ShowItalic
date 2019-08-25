@@ -12,8 +12,8 @@ class ShowItalic(ReporterPlugin):
 			'en': u'Italic',
 			'de': u'Kursive',
 			'es': u'itálicas',
-			'fr': u'italique'
-			'zh': u'🥂意大利体'
+			'fr': u'italique',
+			'zh': u'🥂意大利体',
 		})
 		
 	def masterHasItalicAngle( self, thisMaster ):
