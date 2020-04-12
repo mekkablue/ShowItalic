@@ -1,12 +1,15 @@
 # encoding: utf-8
+from __future__ import division, print_function, unicode_literals
 
-import math
+import objc
 from GlyphsApp import *
 from GlyphsApp.plugins import *
-import traceback
+from math import tan, radians
+
 
 class ShowItalic(ReporterPlugin):
 
+	@objc.python_method
 	def settings(self):
 		self.menuName = Glyphs.localize({
 			'en': u'Italic',
@@ -15,7 +18,8 @@ class ShowItalic(ReporterPlugin):
 			'fr': u'italique',
 			'zh': u'🥂意大利体',
 		})
-		
+	
+	@objc.python_method
 	def masterHasItalicAngle( self, thisMaster ):
 		try:
 			if abs(thisMaster.italicAngle) < 0.01:
@@ -23,8 +27,10 @@ class ShowItalic(ReporterPlugin):
 			else:
 				return True
 		except:
-			print traceback.format_exc()
+			import traceback
+			print(traceback.format_exc())
 	
+	@objc.python_method
 	def italicFontForFont( self, thisFont ):
 		try:
 			if thisFont:
@@ -39,17 +45,12 @@ class ShowItalic(ReporterPlugin):
 						return listOfItalicFamilyMembers[0]
 			return None
 		except Exception as e:
-			print "Problem with", thisFont
-			print traceback.format_exc()
+			print("Problem with:", thisFont)
+			print(e)
+			import traceback
+			print(traceback.format_exc())
 	
-	def shiftLayer( self, thisLayer, xOffset ):
-		try:
-			xShift = NSAffineTransform.transform()
-			xShift.translateXBy_yBy_( xOffset, 0.0 )
-			thisLayer.transform_checkForSelection_( xShift, False )
-		except:
-			print traceback.format_exc()
-	
+	@objc.python_method
 	def transform(self, shiftX=0.0, shiftY=0.0, rotate=0.0, skew=0.0, scale=1.0):
 		"""
 		Returns an NSAffineTransform object for transforming layers.
@@ -75,19 +76,22 @@ class ShowItalic(ReporterPlugin):
 			skewStruct = NSAffineTransformStruct()
 			skewStruct.m11 = 1.0
 			skewStruct.m22 = 1.0
-			skewStruct.m21 = math.tan(math.radians(skew))
+			skewStruct.m21 = tan(radians(skew))
 			skewTransform = NSAffineTransform.transform()
 			skewTransform.setTransformStruct_(skewStruct)
 			myTransform.appendTransform_(skewTransform)
 		return myTransform
 	
+	@objc.python_method
 	def background(self, layer):
 		self.drawItalic(layer)
 	
+	@objc.python_method
 	def inactiveLayerBackground(self, layer):
 		if Glyphs.defaults["com.mekkablue.ShowItalic.drawItalicsForInactiveGlyphs"]:
 			self.drawItalic(layer, shouldFill=False, shouldFallback=False)
 	
+	@objc.python_method
 	def drawItalic(self, layer, shouldFill=True, shouldFallback=True):
 		# set the default color:
 		drawingColor = NSColor.colorWithRed_green_blue_alpha_(1.0, 0.1, 0.3, 0.3)
@@ -168,3 +172,8 @@ class ShowItalic(ReporterPlugin):
 							text = " \n \n \n \n%s not found.\nDisplaying %s instead." % ( glyphName, glyphNameWithoutSuffix )
 							textPosition = NSPoint( displayLayer.bounds.origin.x+displayLayer.bounds.size.width/2.0, displayLayer.bounds.origin.y )
 							self.drawTextAtPoint( text, textPosition, fontSize=10.0, fontColor=drawingColor, align='center')
+
+	@objc.python_method
+	def __file__(self):
+		"""Please leave this method unchanged"""
+		return __file__
