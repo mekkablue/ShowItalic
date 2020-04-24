@@ -1,11 +1,9 @@
 # encoding: utf-8
 from __future__ import division, print_function, unicode_literals
-
 import objc
 from GlyphsApp import *
 from GlyphsApp.plugins import *
 from math import tan, radians
-
 
 class ShowItalic(ReporterPlugin):
 
@@ -18,6 +16,48 @@ class ShowItalic(ReporterPlugin):
 			'fr': u'italique',
 			'zh': u'🥂意大利体',
 		})
+		self.keyboardShortcut = 'i'
+		self.keyboardShortcutModifier = NSControlKeyMask | NSAlternateKeyMask | NSCommandKeyMask
+		self.threshold = 0.1
+	
+	@objc.python_method
+	def foreground( self, layer ):
+		if not self.getScale()>self.threshold and self.conditionsAreMetForDrawing():
+			self.drawItalic(layer, shouldFill=False, shouldFallback=False, canShowBounds=False)
+	
+	@objc.python_method
+	def background(self, layer):
+		if self.getScale()>self.threshold and self.conditionsAreMetForDrawing():
+			self.drawItalic(layer)
+
+	@objc.python_method
+	def inactiveLayerForeground(self, layer):
+		if self.getScale()>self.threshold and self.conditionsAreMetForDrawing:
+			activeLayer = self.controller.activeLayer()
+			if activeLayer and activeLayer.parent.name in layer.componentNames():
+				for item in activeLayer.selection:
+					if type(item)==GSAnchor:
+						self.drawItalic(layer, shouldFill=False, shouldFallback=True, canShowBounds=True)
+						break
+	
+	@objc.python_method
+	def inactiveLayerBackground(self, layer):
+		if self.getScale()>self.threshold and Glyphs.defaults["com.mekkablue.ShowItalic.drawItalicsForInactiveGlyphs"]:
+			self.drawItalic(layer, shouldFill=False, shouldFallback=False, canShowBounds=(not self.conditionsAreMetForDrawing()))
+	
+	@objc.python_method
+	def conditionsAreMetForDrawing(self):
+		"""
+		Don't activate if text or pan (hand) tool are active.
+		"""
+		currentController = self.controller.view().window().windowController()
+		if currentController:
+			tool = currentController.toolDrawDelegate()
+			textToolIsActive = tool.isKindOfClass_( NSClassFromString("GlyphsToolText") )
+			handToolIsActive = tool.isKindOfClass_( NSClassFromString("GlyphsToolHand") )
+			if not textToolIsActive and not handToolIsActive: 
+				return True
+		return False
 	
 	@objc.python_method
 	def masterHasItalicAngle( self, thisMaster ):
@@ -83,19 +123,71 @@ class ShowItalic(ReporterPlugin):
 		return myTransform
 	
 	@objc.python_method
-	def background(self, layer):
-		self.drawItalic(layer)
+	def drawLine( self, start=NSPoint(), end=NSPoint(), dashed=False ):
+		try:
+			line = NSBezierPath.bezierPath()
+			line.moveTo_( start )
+			line.lineTo_( end )
+			line.setLineWidth_( 1.0/self.getScale() )
+			if dashed:
+				line.setLineDash_count_phase_((1.0/self.getScale(), 3.0/self.getScale()), 2, 0)
+			line.stroke()
+		except Exception as e:
+			self.logToConsole( "drawLine: %s" % str(e) )
 	
 	@objc.python_method
-	def inactiveLayerBackground(self, layer):
-		if Glyphs.defaults["com.mekkablue.ShowItalic.drawItalicsForInactiveGlyphs"]:
-			self.drawItalic(layer, shouldFill=False, shouldFallback=False)
+	def drawHeightSnapsForLayers( self, otherLayer, currentLayer ):
+		try:
+			otherHeight = otherLayer.bounds.size.height
+			currentHeight = currentLayer.bounds.size.height
+			
+			# only draw if there is something in BOTH layers:
+			if otherHeight != 0 and currentHeight !=0:
+				
+				# measurements:
+				otherShift = (currentLayer.width-otherLayer.width)*0.5
+				otherLeft = otherLayer.bounds.origin.x + otherShift
+				currentLeft = currentLayer.bounds.origin.x
+				otherRight = otherLeft + otherLayer.bounds.size.width
+				currentRight = currentLeft + currentLayer.bounds.size.width
+				otherBottom = otherLayer.bounds.origin.y
+				currentBottom = currentLayer.bounds.origin.y
+				otherTop = otherBottom + otherHeight
+				currentTop = currentBottom + currentHeight
+				margin = 10.0
+				
+				sameHeightColor = NSColor.blueColor().colorWithAlphaComponent_(0.6)
+				differentHeightColor = NSColor.textColor().colorWithAlphaComponent_(0.25)
+				
+				# BOTTOMS
+				if otherBottom == currentBottom:
+					sameHeightColor.set()
+					xMin = min(otherLeft, currentLeft) - margin
+					xMax = max(otherRight, currentRight) + margin
+					self.drawLine( start=NSPoint(xMin, otherBottom), end=NSPoint(xMax, otherBottom) )
+				else:
+					differentHeightColor.set()
+					self.drawLine( start=NSPoint(otherLeft-margin, otherBottom), end=NSPoint(otherRight+margin, otherBottom), dashed=True )
+					self.drawLine( start=NSPoint(currentLeft-margin, currentBottom), end=NSPoint(currentRight+margin, currentBottom), dashed=True )
+				
+				# TOPS
+				if otherTop == currentTop:
+					sameHeightColor.set()
+					xMin = min(otherLeft, currentLeft) - margin
+					xMax = max(otherRight, currentRight) + margin
+					self.drawLine( start=NSPoint(xMin, otherTop), end=NSPoint(xMax, otherTop) )
+				else:
+					differentHeightColor.set()
+					self.drawLine( start=NSPoint(otherLeft-margin, otherTop), end=NSPoint(otherRight+margin, otherTop), dashed=True )
+					self.drawLine( start=NSPoint(currentLeft-margin, currentTop), end=NSPoint(currentRight+margin, currentTop), dashed=True )
+				
+		except Exception as e:
+			self.logToConsole( "drawHeightSnapsForLayers: %s" % str(e) )
 	
 	@objc.python_method
-	def drawItalic(self, layer, shouldFill=True, shouldFallback=True):
+	def drawItalic(self, layer, shouldFill=True, shouldFallback=True, canShowBounds=True):
 		# set the default color:
-		drawingColor = NSColor.colorWithRed_green_blue_alpha_(1.0, 0.1, 0.3, 0.3)
-		
+		drawingColor = NSColor.redColor()
 		exactCounterpartShown = True
 		
 		# current font:
@@ -121,7 +213,7 @@ class ShowItalic(ReporterPlugin):
 					italicGlyph = italicFont.glyphs[glyphNameWithoutSuffix]
 					exactCounterpartShown = False
 					# change color, so user knows it is not an exact counterpart:
-					drawingColor = NSColor.greenColor()
+					drawingColor = NSColor.greenColor().colorWithAlphaComponent_(0.4)
 				
 				if italicGlyph:
 					# determine the same master in other font:
@@ -141,30 +233,30 @@ class ShowItalic(ReporterPlugin):
 					# find the glyph layer that corresponds to the master:
 					italicLayer = italicGlyph.layers[italicMaster.id]
 					if not italicLayer is None:
-						displayLayer = NSBezierPath.bezierPath()
-						try:
-							# app version 2.2
-							displayLayer.appendBezierPath_(italicLayer.bezierPath())
-							for component in italicLayer.components:
-								displayLayer.appendBezierPath_( component.bezierPath() )
-						except:
-							# app version 2.3+
-							displayLayer.appendBezierPath_(italicLayer.bezierPath)
-							for component in italicLayer.components:
-								displayLayer.appendBezierPath_( component.bezierPath )
+						displayLayer = italicLayer.completeBezierPath
 							
 						# center layer:
-						widthDifference = layer.width - italicLayer.width
+						widthDifference = (layer.width-italicLayer.width)*0.5
 						if widthDifference:
-							horizontalShift = self.transform( shiftX=widthDifference/2.0 )
+							horizontalShift = self.transform( shiftX=widthDifference )
 							displayLayer.transformUsingAffineTransform_( horizontalShift )
-							
+						
+						# draw height snaps on canvas:
+						try:
+							if canShowBounds: # and Glyphs.versionNumber >= 3.0:
+								self.drawHeightSnapsForLayers(italicLayer, layer)
+						except:
+							import traceback
+							print(traceback.format_exc())
+							pass
+						
 						# draw the layer on the canvas:
-						drawingColor.set()
 						if shouldFill:
+							drawingColor.colorWithAlphaComponent_(0.25).set()
 							displayLayer.fill()
 						else:
-							displayLayer.setLineWidth_( 1.0 * self.getScale() ** -0.9 )
+							drawingColor.colorWithAlphaComponent_(0.45).set()
+							displayLayer.setLineWidth_( 1.5/self.getScale() )
 							displayLayer.stroke()
 						
 						# display info if a different glyph is shown
