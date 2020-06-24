@@ -53,9 +53,9 @@ class ShowItalic(ReporterPlugin):
 		currentController = self.controller.view().window().windowController()
 		if currentController:
 			tool = currentController.toolDrawDelegate()
-			textToolIsActive = tool.isKindOfClass_( NSClassFromString("GlyphsToolText") )
+			# textToolIsActive = tool.isKindOfClass_( NSClassFromString("GlyphsToolText") )
 			handToolIsActive = tool.isKindOfClass_( NSClassFromString("GlyphsToolHand") )
-			if not textToolIsActive and not handToolIsActive: 
+			if not handToolIsActive: 
 				return True
 		return False
 	
