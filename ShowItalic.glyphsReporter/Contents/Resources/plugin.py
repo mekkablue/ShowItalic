@@ -220,6 +220,10 @@ class ShowItalic(ReporterPlugin):
 					# default to the first master:
 					italicMaster = italicFont.masters[0]
 					uprightMasterID = layer.associatedMasterId
+					if type(uprightMasterID) == objc.native_selector:
+						uprightMasterID = layer.associatedMasterId()
+						# background layer: associatedMasterId not wrapped
+						
 					if uprightMasterID:
 						uprightMasterName = uprightFont.masters[uprightMasterID].name.replace("Italic","").replace("  "," ").strip()
 						# try to find exact expected name:
@@ -234,12 +238,17 @@ class ShowItalic(ReporterPlugin):
 					italicLayer = italicGlyph.layers[italicMaster.id]
 					if not italicLayer is None:
 						displayLayer = italicLayer.completeBezierPath
+						scaleFactor = uprightFont.upm/italicFont.upm
+						if scaleFactor != 1.0:
+							scale = self.transform(scale=scaleFactor)
+							displayLayer.transformUsingAffineTransform_(scale)
+							
 							
 						# center layer:
-						widthDifference = (layer.width-italicLayer.width)*0.5
+						widthDifference = (layer.width - italicLayer.width) * 0.5 * scaleFactor
 						if widthDifference:
-							horizontalShift = self.transform( shiftX=widthDifference )
-							displayLayer.transformUsingAffineTransform_( horizontalShift )
+							horizontalShift = self.transform(shiftX=widthDifference)
+							displayLayer.transformUsingAffineTransform_(horizontalShift)
 						
 						# draw height snaps on canvas:
 						try:
@@ -256,14 +265,14 @@ class ShowItalic(ReporterPlugin):
 							displayLayer.fill()
 						else:
 							drawingColor.colorWithAlphaComponent_(0.45).set()
-							displayLayer.setLineWidth_( 1.5/self.getScale() )
+							displayLayer.setLineWidth_(1.5/self.getScale())
 							displayLayer.stroke()
 						
 						# display info if a different glyph is shown
 						if not exactCounterpartShown and shouldFallback:
-							text = " \n \n \n \n%s not found.\nDisplaying %s instead." % ( glyphName, glyphNameWithoutSuffix )
-							textPosition = NSPoint( displayLayer.bounds.origin.x+displayLayer.bounds.size.width/2.0, displayLayer.bounds.origin.y )
-							self.drawTextAtPoint( text, textPosition, fontSize=10.0, fontColor=drawingColor, align='center')
+							text = " \n \n \n \n%s not found.\nDisplaying %s instead." % (glyphName, glyphNameWithoutSuffix)
+							textPosition = NSPoint(displayLayer.bounds.origin.x+displayLayer.bounds.size.width/2.0, displayLayer.bounds.origin.y)
+							self.drawTextAtPoint(text, textPosition, fontSize=10.0, fontColor=drawingColor, align='center')
 
 	@objc.python_method
 	def __file__(self):
