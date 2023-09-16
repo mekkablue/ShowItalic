@@ -220,7 +220,7 @@ class ShowItalic(ReporterPlugin):
 					# default to the first master:
 					italicMaster = italicFont.masters[0]
 					uprightMasterID = layer.associatedMasterId
-					if type(uprightMasterID) == objc.native_selector:
+					if not isinstance(uprightMasterID, str):
 						uprightMasterID = layer.associatedMasterId()
 						# background layer: associatedMasterId not wrapped
 						
