@@ -270,8 +270,11 @@ class ShowItalic(ReporterPlugin):
 						
 						# display info if a different glyph is shown
 						if not exactCounterpartShown and shouldFallback:
-							text = " \n \n \n \n%s not found.\nDisplaying %s instead." % (glyphName, glyphNameWithoutSuffix)
-							textPosition = NSPoint(displayLayer.bounds.origin.x+displayLayer.bounds.size.width/2.0, displayLayer.bounds.origin.y)
+							text = f" \n \n \n \n{glyphName} not found.\nDisplaying {glyphNameWithoutSuffix} instead."
+							bounds = displayLayer.bounds
+							if type(bounds) == objc.native_selector:
+								bounds = displayLayer.bounds()
+							textPosition = NSPoint(bounds.origin.x+bounds.size.width/2.0, bounds.origin.y)
 							self.drawTextAtPoint(text, textPosition, fontSize=10.0, fontColor=drawingColor, align='center')
 
 	@objc.python_method
