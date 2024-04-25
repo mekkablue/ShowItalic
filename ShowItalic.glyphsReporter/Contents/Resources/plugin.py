@@ -10,11 +10,11 @@ class ShowItalic(ReporterPlugin):
 	@objc.python_method
 	def settings(self):
 		self.menuName = Glyphs.localize({
-			'en': u'Italic',
-			'de': u'Kursive',
-			'es': u'itálicas',
-			'fr': u'italique',
-			'zh': u'🥂意大利体',
+			'en': 'Italic',
+			'de': 'Kursive',
+			'es': 'itálicas',
+			'fr': 'italique',
+			'zh': '🥂意大利体',
 		})
 		self.keyboardShortcut = 'i'
 		self.keyboardShortcutModifier = NSControlKeyMask | NSAlternateKeyMask | NSCommandKeyMask
@@ -184,6 +184,23 @@ class ShowItalic(ReporterPlugin):
 		except Exception as e:
 			self.logToConsole( "drawHeightSnapsForLayers: %s" % str(e) )
 	
+	def cleanName(self, name):
+		triggerWords = (
+			"Italic",
+			"Roman",
+			"Upright",
+			"Kursiv",
+			"Aufrecht",
+			"Recte",
+		)
+		for triggerWord in triggerWords:
+			if triggerWord in name:
+				name = name.replace(triggerWord, "").replace("  ", " "), strip()
+				if name == "":
+					name = "Regular"
+				break
+		return name
+	
 	@objc.python_method
 	def drawItalic(self, layer, shouldFill=True, shouldFallback=True, canShowBounds=True):
 		# set the default color:
@@ -225,14 +242,19 @@ class ShowItalic(ReporterPlugin):
 						# background layer: associatedMasterId not wrapped
 						
 					if uprightMasterID:
-						uprightMasterName = uprightFont.masters[uprightMasterID].name.replace("Italic","").replace("  "," ").strip()
+						uprightMasterName = self.cleanName(uprightFont.masters[uprightMasterID].name)
 						# try to find exact expected name:
-						italicMasters = [m for m in italicFont.masters if m.name.replace("Italic","").replace("  "," ").strip()==uprightMasterName]
+						italicMasters = [m for m in italicFont.masters if uprightMasterName == self.cleanName(m.name)]
 						# if that fails, pick a best guess
 						if not italicMasters:
-							italicMasters = [m for m in italicFont.masters if m.name.replace("Italic","").replace("  "," ").startswith(uprightMasterName)]
+							italicMasters = [m for m in italicFont.masters if self.cleanName(m.name).startswith(uprightMasterName)]
 						if italicMasters:
 							italicMaster = italicMasters[0]
+						elif len(uprightFont.masters) == len(italicFont.masters):
+							for i, m in enumerate(uprightFont.masters):
+								if m.id == uprightMasterID:
+									italicMaster = italicFont.masters[i]
+									break
 					
 					# find the glyph layer that corresponds to the master:
 					italicLayer = italicGlyph.layers[italicMaster.id]
