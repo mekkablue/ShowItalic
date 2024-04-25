@@ -13,15 +13,15 @@
 	<key>CFBundleName</key>
 	<string>ShowItalic</string>
 	<key>CFBundleShortVersionString</key>
-	<string>2.0.8</string>
+	<string>2.0.9</string>
 	<key>CFBundleVersion</key>
-	<string>24</string>
+	<string>25</string>
 	<key>UpdateFeedURL</key>
 	<string>https://raw.githubusercontent.com/mekkablue/ShowItalic/master/ShowItalic.glyphsReporter/Contents/Info.plist</string>
 	<key>productPageURL</key>
 	<string>https://github.com/mekkablue/ShowItalic</string>
 	<key>productReleaseNotes</key>
-	<string>Better fallback, thx Claus.</string>
+	<string>Better fallback and some errorfixing, thx Claus.</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright, Rainer Erich Scheichelbauer, 2016</string>
 	<key>NSPrincipalClass</key>

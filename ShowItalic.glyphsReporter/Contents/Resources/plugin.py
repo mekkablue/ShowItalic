@@ -184,6 +184,7 @@ class ShowItalic(ReporterPlugin):
 		except Exception as e:
 			self.logToConsole( "drawHeightSnapsForLayers: %s" % str(e) )
 	
+	@objc.python_method
 	def cleanName(self, name):
 		triggerWords = (
 			"Italic",
@@ -195,7 +196,7 @@ class ShowItalic(ReporterPlugin):
 		)
 		for triggerWord in triggerWords:
 			if triggerWord in name:
-				name = name.replace(triggerWord, "").replace("  ", " "), strip()
+				name = name.replace(triggerWord, "").replace("  ", " ").strip()
 				if name == "":
 					name = "Regular"
 				break
