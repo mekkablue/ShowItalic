@@ -13,6 +13,7 @@ class ShowItalic(ReporterPlugin):
 			'en': 'Italic',
 			'de': 'Kursive',
 			'es': 'itálicas',
+			'it': 'italica',
 			'fr': 'italique',
 			'zh': '🥂意大利体',
 		})
