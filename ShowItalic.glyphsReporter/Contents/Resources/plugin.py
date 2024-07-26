@@ -39,7 +39,7 @@ class ShowItalic(ReporterPlugin):
 			activeLayer = self.controller.activeLayer()
 			if activeLayer and activeLayer.parent.name in layer.componentNames():
 				for item in activeLayer.selection:
-					if issubclass(item, GSAnchor):
+					if isinstance(item, GSAnchor):
 						self.drawItalic(layer, shouldFill=False, shouldFallback=True, canShowBounds=True)
 						break
 
