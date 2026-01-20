@@ -35,7 +35,7 @@ class ShowItalic(ReporterPlugin):
 
 	@objc.python_method
 	def inactiveLayerForeground(self, layer):
-		if self.getScale() > self.threshold and self.conditionsAreMetForDrawing:
+		if self.getScale() > self.threshold and self.conditionsAreMetForDrawing():
 			activeLayer = self.controller.activeLayer()
 			if activeLayer and activeLayer.parent.name in layer.componentNames():
 				for item in activeLayer.selection:
@@ -92,6 +92,64 @@ class ShowItalic(ReporterPlugin):
 			print(e)
 			import traceback
 			print(traceback.format_exc())
+
+	@objc.python_method
+	def italicMasterForCurrentMaster(self, master):
+		"""
+		Finds the next italic master for the currently selected font master.
+
+		Args:
+			master: GSFontMaster
+
+		Returns: master (GSFontMaster) with the same axis values, but different ital/slnt axis value.
+		"""
+		if not master:
+			return None
+
+		font = master.font
+
+		italicAxis = font.axisForTag_('ital') or font.axisForTag_('slnt')
+
+		if not italicAxis:
+			return None
+
+		italicValues = []
+
+		for fontMaster in font.masters:
+			italicValue = fontMaster.axisValueValueForId_(italicAxis.id)
+			if italicValue not in italicValues:
+				italicValues.append(italicValue)
+
+		italicValues.sort()
+
+		if len(italicValues) < 2:
+			return None
+
+		masterItalicValue = master.axisValueValueForId_(italicAxis.id)
+
+		# Find the master with the next biggest italic value, but identical values on the other axes.
+
+		thisItalicValueIndex = italicValues.index(masterItalicValue)
+
+		nextItalicValue = italicValues[thisItalicValueIndex % len(italicValues)]
+
+		nextItalicMaster = None
+		for otherMaster in font.masters:
+			if otherMaster == master:
+				continue
+			match = True
+			for axis in font.axes:
+				if axis.axisTag != italicAxis.axisTag:
+					if otherMaster.axisValueValueForId_(axis.id) != master.axisValueValueForId_(axis.id):
+						match = False
+						continue
+			if master.axisValueValueForId_(italicAxis.id) != nextItalicValue:
+				continue
+			elif match:
+				nextItalicMaster = otherMaster
+				break
+
+		return nextItalicMaster
 
 	@objc.python_method
 	def transform(self, shiftX=0.0, shiftY=0.0, rotate=0.0, skew=0.0, scale=1.0):
@@ -218,8 +276,17 @@ class ShowItalic(ReporterPlugin):
 			if glyph:
 				uprightFont = glyph.parent
 
+		# Find the corresponding italic master in the same font.
+		fontHasItalic = False
+		if italicMaster := self.italicMasterForCurrentMaster(layer.associatedFontMaster()):
+			fontHasItalic = True
+
 		# find the italic/upright counterpart for the font:
-		italicFont = self.italicFontForFont(uprightFont)
+		if fontHasItalic:
+			italicFont = layer.font()
+		else:
+			italicFont = self.italicFontForFont(uprightFont)
+
 		if italicFont:
 			glyph = layer.parent
 			if glyph:
@@ -237,28 +304,29 @@ class ShowItalic(ReporterPlugin):
 					drawingColor = NSColor.greenColor().colorWithAlphaComponent_(0.4)
 
 				if italicGlyph:
-					# determine the same master in other font:
-					# default to the first master:
-					italicMaster = italicFont.masters[0]
-					uprightMasterID = layer.associatedMasterId
-					if not isinstance(uprightMasterID, str):
-						uprightMasterID = layer.associatedMasterId()
-						# background layer: associatedMasterId not wrapped
+					if not fontHasItalic:
+						# determine the same master in other font:
+						# default to the first master:
+						italicMaster = italicFont.masters[0]
+						uprightMasterID = layer.associatedMasterId
+						if not isinstance(uprightMasterID, str):
+							uprightMasterID = layer.associatedMasterId()
+							# background layer: associatedMasterId not wrapped
 
-					if uprightMasterID:
-						uprightMasterName = self.cleanName(uprightFont.masters[uprightMasterID].name)
-						# try to find exact expected name:
-						italicMasters = [m for m in italicFont.masters if uprightMasterName == self.cleanName(m.name)]
-						# if that fails, pick a best guess
-						if not italicMasters:
-							italicMasters = [m for m in italicFont.masters if self.cleanName(m.name).startswith(uprightMasterName)]
-						if italicMasters:
-							italicMaster = italicMasters[0]
-						elif len(uprightFont.masters) == len(italicFont.masters):
-							for i, m in enumerate(uprightFont.masters):
-								if m.id == uprightMasterID:
-									italicMaster = italicFont.masters[i]
-									break
+						if uprightMasterID:
+							uprightMasterName = self.cleanName(uprightFont.masters[uprightMasterID].name)
+							# try to find exact expected name:
+							italicMasters = [m for m in italicFont.masters if uprightMasterName == self.cleanName(m.name)]
+							# if that fails, pick a best guess
+							if not italicMasters:
+								italicMasters = [m for m in italicFont.masters if self.cleanName(m.name).startswith(uprightMasterName)]
+							if italicMasters:
+								italicMaster = italicMasters[0]
+							elif len(uprightFont.masters) == len(italicFont.masters):
+								for i, m in enumerate(uprightFont.masters):
+									if m.id == uprightMasterID:
+										italicMaster = italicFont.masters[i]
+										break
 
 					# find the glyph layer that corresponds to the master:
 					italicLayer = italicGlyph.layers[italicMaster.id]
